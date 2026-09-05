@@ -10,6 +10,10 @@ void Game::Reset()
 {
 	Console::SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 	Console::CursorVisible(false);
+
+	// beginning each game withough an active win condition
+	playerWon = false;
+
 	paddle.width = 12;
 	paddle.height = 2;
 	paddle.x_position = 32;
@@ -89,6 +93,17 @@ void Game::Render() const
 		brick.Draw();
 	}
 
+	if (playerWon)
+	{
+		const char* message = "You win! Press 'R' to play again.";
+		const int messageWidth = 33;
+		const int messageX = (Console::WindowWidth() - messageWidth) / 2;
+		const int messageY = Console::WindowHeight() / 2;
+
+		Console::ForegroundColor(ConsoleColor::Yellow);
+		Console::WordWrap(messageX, messageY, messageWidth, message);
+	}
+
 	Console::Lock(false);
 }
 
@@ -128,6 +143,13 @@ void Game::CheckCollision()
 	}
 
 	// TODO #6 - If no bricks remain, pause ball and display (render) victory text with R to reset
+
+	// winning occurs after the final brick is removed
+	if (bricks.empty())
+	{
+		ball.moving = false;
+		playerWon = true;
+	}
 
 
 	if (paddle.Contains(ball.x_position + ball.x_velocity, ball.y_velocity + ball.y_position))

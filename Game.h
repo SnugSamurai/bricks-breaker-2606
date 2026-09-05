@@ -13,6 +13,9 @@ class Game
 	// storing the bricks by value so the vector manages their lifetime
 	std::vector<Box> bricks;
 
+	// tracking whether the player has destroyed every brick
+	bool playerWon = false;
+
 public:
 	Game();
 	bool Update();
