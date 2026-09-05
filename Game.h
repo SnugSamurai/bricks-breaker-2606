@@ -8,10 +8,12 @@ class Game
 	Ball ball;
 	Box paddle;
 
-	// TODO #1 - Instead of storing 1 brick, store a vector of bricks (by value)
 
 	// storing the bricks by value so the vector manages their lifetime
 	std::vector<Box> bricks;
+
+	//tracking whether the ball has reached the bottom of the window
+	bool playerLost = false;
 
 	// tracking whether the player has destroyed every brick
 	bool playerWon = false;
