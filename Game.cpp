@@ -95,13 +95,31 @@ void Game::Render() const
 void Game::CheckCollision()
 {
 	// checking the ball's next positions against every brick (updating current code logic)
-	for (Box& brick : bricks)
+	for (int i = 0; i < static_cast<int>(bricks.size()); i++)
 	{
+
+		Box& brick = bricks[i];
+
 	// TODO #4 - Update collision to check all bricks
 		if (brick.Contains(ball.x_position + ball.x_velocity, ball.y_position + ball.y_velocity))
 		{
-			brick.color = ConsoleColor(brick.color - 1);
+			brick.hitCount++;
 			ball.y_velocity *= -1;
+
+			//changing color to show that the brick has taken damage
+			if (brick.hitCount == 1)
+			{
+				brick.color = ConsoleColor::DarkYellow;
+			}
+			else if (brick.hitCount == 2)
+			{
+				brick.color = ConsoleColor::DarkRed;
+			}
+			else
+			{
+				// erasing the brick when it receieves its third hit
+				bricks.erase(bricks.begin() + i);
+			}
 
 			break; // only one brick should respond during this update
 
