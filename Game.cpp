@@ -10,6 +10,11 @@ void Game::Reset()
 {
 	Console::SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 	Console::CursorVisible(false);
+
+	// beginning each game without an active win condition
+	playerWon = false;
+	playerLost = false;
+
 	paddle.width = 12;
 	paddle.height = 2;
 	paddle.x_position = 32;
@@ -19,13 +24,25 @@ void Game::Reset()
 	ball.color = ConsoleColor::Cyan;
 	ResetBall();
 
-	// TODO #2 - Add this brick and 4 more bricks to the vector
-	brick.width = 10;
-	brick.height = 2;
-	brick.x_position = 0;
-	brick.y_position = 5;
-	brick.doubleThick = true;
-	brick.color = ConsoleColor::DarkGreen;
+
+	// removing any bricks from the previous game before rebuilding the row
+	bricks.clear();
+
+	// creating five bricks evenly spaced across one row
+	for (int i = 0; i < 5; i++)
+	{
+		Box newBrick;
+		newBrick.width = 10;
+		newBrick.height = 2;
+		newBrick.x_position = 5 + (i * 15); // leave five spaces between each 10-character-wide brick
+		newBrick.y_position = 5;
+		newBrick.doubleThick = true;
+		newBrick.color = ConsoleColor::DarkGreen;
+
+		bricks.push_back(newBrick); // copies the completed 'Box' into the vector
+	}
+
+
 }
 
 void Game::ResetBall()
@@ -48,7 +65,7 @@ bool Game::Update()
 	if (GetAsyncKeyState(VK_LEFT) && paddle.x_position > 0)
 		paddle.x_position -= 2;
 
-	if (GetAsyncKeyState(VK_SPACE) & 0x1)
+	if ((GetAsyncKeyState(VK_SPACE) & 0x1) && !playerWon && !playerLost)
 		ball.moving = !ball.moving;
 
 	if (GetAsyncKeyState('R') & 0x1)
@@ -68,25 +85,76 @@ void Game::Render() const
 	paddle.Draw();
 	ball.Draw();
 
-	// TODO #3 - Update render to render all bricks
-	brick.Draw();
+
+	// drawing every brick currently stored in the vector
+	for (const Box& brick : bricks)
+	{
+		brick.Draw();
+	}
+
+	if (playerWon)
+	{
+		const char* message = "You win! Press 'R' to play again.";
+		const int messageWidth = 33;
+		const int messageX = (Console::WindowWidth() - messageWidth) / 2;
+		const int messageY = Console::WindowHeight() / 2;
+
+		Console::ForegroundColor(ConsoleColor::Yellow);
+		Console::WordWrap(messageX, messageY, messageWidth, message);
+	}
+	else if (playerLost)
+	{
+		const char* message = "You lose. Press 'R' to play again.";
+		const int messageWidth = 34;
+		const int messageX = (Console::WindowWidth() - messageWidth) / 2;
+		const int messageY = Console::WindowHeight() / 2;
+
+		Console::ForegroundColor(ConsoleColor::Red);
+		Console::WordWrap(messageX, messageY, messageWidth, message);
+	}
 
 	Console::Lock(false);
 }
 
 void Game::CheckCollision()
 {
-	// TODO #4 - Update collision to check all bricks
-	if (brick.Contains(ball.x_position + ball.x_velocity, ball.y_position + ball.y_velocity))
+	// checking the ball's next positions against every brick (updating current code logic)
+	for (int i = 0; i < static_cast<int>(bricks.size()); i++)
 	{
-		brick.color = ConsoleColor(brick.color - 1);
-		ball.y_velocity *= -1;
 
-		// TODO #5 - If the ball hits the same brick 3 times (color == black), remove it from the vector
+		Box& brick = bricks[i];
 
+		if (brick.Contains(ball.x_position + ball.x_velocity, ball.y_position + ball.y_velocity))
+		{
+			brick.hitCount++;
+			ball.y_velocity *= -1;
+
+			//changing color to show that the brick has taken damage
+			if (brick.hitCount == 1)
+			{
+				brick.color = ConsoleColor::DarkYellow;
+			}
+			else if (brick.hitCount == 2)
+			{
+				brick.color = ConsoleColor::DarkRed;
+			}
+			else
+			{
+				// erasing the brick when it receieves its third hit
+				bricks.erase(bricks.begin() + i);
+			}
+
+			break; // only one brick should respond during this update
+
+		}
 	}
 
-	// TODO #6 - If no bricks remain, pause ball and display (render) victory text with R to reset
+	// winning occurs after the final brick is removed
+	if (bricks.empty())
+	{
+		ball.moving = false;
+		playerWon = true;
+	}
 
 
 	if (paddle.Contains(ball.x_position + ball.x_velocity, ball.y_velocity + ball.y_position))
@@ -94,5 +162,10 @@ void Game::CheckCollision()
 		ball.y_velocity *= -1;
 	}
 
-	// TODO #7 - If ball touches bottom of window, pause ball and display (render) defeat text with R to reset
+	// the final valid row is the bottom of the window
+	if (ball.y_position >= Console::WindowHeight() - 1)
+	{
+		ball.moving = false;
+		playerLost = true;
+	}
 }
